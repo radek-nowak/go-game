@@ -60,6 +60,19 @@ func (player *Player) Update() error {
 		player.shoot()
 	}
 
+	if player.position.X() > ScreenWidth {
+		player.position = *NewVector(0, player.position.Y())
+	}
+	if player.position.X() < 0 {
+		player.position = *NewVector(ScreenWidth, player.position.Y())
+	}
+	if player.position.Y() > ScreenHeight {
+		player.position = *NewVector(player.position.X(), 0)
+	}
+	if player.position.Y() < 0 {
+		player.position = *NewVector(player.position.X(), ScreenHeight)
+	}
+
 	// TODO: top velocity
 	// TODO: increase acceleration in the early phase of the movement, and then decrease
 	player.position.Add(player.velocity.x, player.velocity.y)
