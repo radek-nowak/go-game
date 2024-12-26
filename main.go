@@ -104,6 +104,7 @@ func (game *Game) Update() error {
 		if m.CollisionRect().Intersects(game.player.CollisionRect()) {
 			game.player = NewPlayer()
 			game.meteors = nil
+			game.bullets = nil
 			game.score = 0
 		}
 		for j, b := range game.bullets {
