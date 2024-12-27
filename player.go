@@ -13,11 +13,12 @@ var BulletSprite = mustLoadImage("assets/star_tiny.png")
 const topVelocity = 1.0
 
 type Player struct {
-	position    Vector
-	velocity    Vector
-	rotation    Rotation
-	sprite      *ebiten.Image
-	bulletTimer *Timer
+	position      Vector
+	velocity      Vector
+	rotation      Rotation
+	sprite        *ebiten.Image
+	bulletTimer   *Timer
+	bulletManager *BulletManager
 }
 
 func NewPlayer() *Player {
@@ -29,11 +30,12 @@ func NewPlayer() *Player {
 	hh := float64(bounds.Dy() / 2)
 
 	return &Player{
-		position:    *NewVector(ScreenWidth/2-hw, ScreenHeight/2-hh),
-		velocity:    *NewVector(0, 0),
-		rotation:    Rotation{},
-		sprite:      sprite,
-		bulletTimer: NewTimer(200 * time.Millisecond),
+		position:      *NewVector(ScreenWidth/2-hw, ScreenHeight/2-hh),
+		velocity:      *NewVector(0, 0),
+		rotation:      Rotation{},
+		sprite:        sprite,
+		bulletTimer:   NewTimer(200 * time.Millisecond),
+		bulletManager: &BulletManager{},
 	}
 }
 
@@ -84,8 +86,8 @@ func (player *Player) shoot() {
 	player.bulletTimer.Update()
 	if player.bulletTimer.IsReady() {
 		player.bulletTimer.Reset()
-		bullet := player.NewBullet(GlobalGameVar)
-		GlobalGameVar.bullets = append(GlobalGameVar.bullets, bullet)
+		bullet := player.NewBullet()
+		player.bulletManager.bullets = append(player.bulletManager.bullets, bullet)
 	}
 }
 
@@ -149,7 +151,7 @@ func (bullet *Bullet) Draw(screen *ebiten.Image) {
 	screen.DrawImage(bullet.sprite, options)
 }
 
-func (p *Player) NewBullet(game *Game) *Bullet {
+func (p *Player) NewBullet() *Bullet {
 	xk := math.Cos((270.0 + p.rotation.R) * math.Pi / 180.0)
 	yk := math.Sin((270.0 + p.rotation.R) * math.Pi / 180.0)
 	k := NewVector(xk*5, yk*5)

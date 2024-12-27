@@ -75,7 +75,6 @@ type GameActor interface {
 type Game struct {
 	player           *Player
 	meteors          []*Meteor
-	bullets          []*Bullet
 	bulletTimer      *Timer
 	meteorSpawnTimer *Timer
 	score            int
@@ -96,7 +95,7 @@ func (game *Game) Update() error {
 		m.Update()
 	}
 
-	for _, b := range game.bullets {
+	for _, b := range game.player.bulletManager.bullets {
 		b.Update()
 	}
 
@@ -104,15 +103,13 @@ func (game *Game) Update() error {
 		if m.CollisionRect().Intersects(game.player.CollisionRect()) {
 			game.player = NewPlayer()
 			game.meteors = nil
-			game.bullets = nil
+			game.player.bulletManager.bullets = nil
 			game.score = 0
 		}
-		for j, b := range game.bullets {
-			if b.CollisionRect().Intersects(m.CollisionRect()) {
-				game.meteors = append(game.meteors[:i], game.meteors[i+1:]...)
-				game.bullets = append(game.bullets[:j], game.bullets[j+1:]...)
-				game.score += MeteorHitScore
-			}
+		meteorShotDown := game.player.bulletManager.CheckCollisionsWithMeteor(m)
+		if meteorShotDown {
+			game.score += MeteorHitScore
+			game.meteors = append(game.meteors[:i], game.meteors[i+1:]...)
 		}
 	}
 
@@ -126,7 +123,7 @@ func (game *Game) Draw(screen *ebiten.Image) {
 		m.Draw(screen)
 	}
 
-	for _, b := range game.bullets {
+	for _, b := range game.player.bulletManager.bullets {
 		b.Draw(screen)
 	}
 
@@ -137,24 +134,17 @@ func (ga *Game) Layout(outsideWidth int, outsideHeight int) (screenWidth int, sc
 	return outsideWidth - 100, outsideHeight - 100
 }
 
-// TODO: get rid of this
-var GlobalGameVar = &Game{
-	player:           NewPlayer(),
-	meteors:          []*Meteor{},
-	bulletTimer:      NewTimer(5000 * time.Millisecond),
-	meteorSpawnTimer: NewTimer(5 * time.Second),
-}
-
 func main() {
 
-	// g := &Game{
-	// 	player:           NewPlayer(),
-	// 	meteors:          []*Meteor{},
-	// 	bulletTimer:      NewTimer(500 * time.Millisecond),
-	// 	meteorSpawnTimer: NewTimer(5 * time.Second),
-	// }
+	g := &Game{
+		player:           NewPlayer(),
+		meteors:          []*Meteor{},
+		bulletTimer:      NewTimer(5000 * time.Millisecond),
+		meteorSpawnTimer: NewTimer(5 * time.Second),
+		score:            0,
+	}
 
-	err := ebiten.RunGame(GlobalGameVar)
+	err := ebiten.RunGame(g)
 
 	if err != nil {
 		panic(err)
