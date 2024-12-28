@@ -13,6 +13,7 @@ var BulletSprite = mustLoadImage("assets/star_tiny.png")
 const topVelocity = 1.0
 
 type Player struct {
+	lives         int
 	position      Vector
 	velocity      Vector
 	rotation      Rotation
@@ -30,6 +31,7 @@ func NewPlayer() *Player {
 	hh := float64(bounds.Dy() / 2)
 
 	return &Player{
+		lives:         3,
 		position:      *NewVector(ScreenWidth/2-hw, ScreenHeight/2-hh),
 		velocity:      *NewVector(0, 0),
 		rotation:      Rotation{},
@@ -37,6 +39,17 @@ func NewPlayer() *Player {
 		bulletTimer:   NewTimer(200 * time.Millisecond),
 		bulletManager: &BulletManager{},
 	}
+}
+
+func (player *Player) HasRemainingLives() bool {
+	return player.lives > 0
+}
+
+func (player *Player) Reset() {
+	player.lives--
+	player.position = *NewVector(ScreenWidth/2, ScreenHeight/2)
+	player.velocity = *NewVector(0, 0)
+	player.rotation = Rotation{}
 }
 
 func (player *Player) Update() error {

@@ -3,15 +3,12 @@ package main
 import (
 	"embed"
 	"fmt"
-	"image"
 	"image/color"
 	_ "image/png"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text"
-	"golang.org/x/image/font"
-	"golang.org/x/image/font/opentype"
 )
 
 //go:embed assets/*
@@ -24,45 +21,9 @@ const (
 	BigMeteorHitScore   = 100
 )
 
-func mustLoadImage(name string) *ebiten.Image {
-	file, err := assets.Open(name)
-	if err != nil {
-		panic(err)
-	}
-	defer file.Close()
-
-	img, _, err := image.Decode(file)
-	if err != nil {
-		panic(err)
-	}
-
-	return ebiten.NewImageFromImage(img)
-}
 
 var ScoreFont = mustLoadFont("assets/Kenney Mini.ttf")
 
-func mustLoadFont(name string) font.Face {
-	f, err := assets.ReadFile(name)
-	if err != nil {
-		panic(err)
-	}
-
-	tt, err := opentype.Parse(f)
-	if err != nil {
-		panic(err)
-	}
-
-	face, err := opentype.NewFace(tt, &opentype.FaceOptions{
-		Size:    48,
-		DPI:     72,
-		Hinting: font.HintingVertical,
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	return face
-}
 
 type Rotation struct {
 	R float64
@@ -84,6 +45,15 @@ type Game struct {
 func (game *Game) Update() error {
 	game.player.Update()
 
+	// the game ends if player has 0 lives
+	if !game.player.HasRemainingLives() {
+		game.player = NewPlayer()
+		game.meteors = nil
+		game.player.bulletManager.bullets = nil
+		game.score = 0
+	}
+
+	// spawn meteors
 	game.meteorSpawnTimer.Update()
 	if game.meteorSpawnTimer.IsReady() {
 		game.meteorSpawnTimer.Reset()
@@ -92,6 +62,7 @@ func (game *Game) Update() error {
 		game.meteors = append(game.meteors, meteor)
 	}
 
+	// update meteors and bullets state
 	for _, m := range game.meteors {
 		m.Update()
 	}
@@ -100,12 +71,12 @@ func (game *Game) Update() error {
 		b.Update()
 	}
 
+	// check collisions
 	for i, m := range game.meteors {
 		if m.CollisionRect().Intersects(game.player.CollisionRect()) {
-			game.player = NewPlayer()
+			game.player.Reset()
 			game.meteors = nil
 			game.player.bulletManager.bullets = nil
-			game.score = 0
 		}
 		meteorShotDown := game.player.bulletManager.CheckCollisionsWithMeteor(m)
 		if meteorShotDown {
@@ -134,7 +105,17 @@ func (game *Game) Draw(screen *ebiten.Image) {
 		b.Draw(screen)
 	}
 
+	// draw game score
 	text.Draw(screen, fmt.Sprintf("%06d", game.score), ScoreFont, ScreenWidth/2, 50, color.White)
+
+	// draw remaining lives
+	spaceShip := mustLoadImage("assets/ship_B.png")
+
+	for i := 0; i < game.player.lives; i++ {
+		op := &ebiten.DrawImageOptions{}
+		op.GeoM.Translate(10*float64(i), 0)
+		screen.DrawImage(spaceShip, op)
+	}
 }
 
 func (ga *Game) Layout(outsideWidth int, outsideHeight int) (screenWidth int, screenHeight int) {
