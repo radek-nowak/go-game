@@ -15,11 +15,6 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/text"
 )
 
-const (
-	SmallMeteorHitScore = 50
-	BigMeteorHitScore   = 100
-)
-
 var ScoreFont = utils.MustLoadFont("assets/Kenney Mini.ttf")
 
 type GameActor interface {
@@ -73,11 +68,11 @@ func (game *Game) Update() error {
 		if meteorShotDown {
 			game.meteors = append(game.meteors[:i], game.meteors[i+1:]...)
 			if m.IsBig() {
-				game.score += BigMeteorHitScore
+				game.score += config.BigMeteorHitScore
 				newMeteors := meteor.NewSmallMeteors(m)
 				game.meteors = append(game.meteors, newMeteors...)
 			} else {
-				game.score += SmallMeteorHitScore
+				game.score += config.SmallMeteorHitScore
 			}
 		}
 	}
