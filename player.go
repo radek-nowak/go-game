@@ -110,7 +110,7 @@ func (pl *Player) CollisionRect() Rect {
 	bounds := pl.sprite.Bounds()
 
 	// Apply a margin to shrink the collision rectangle
-	margin := 10.0 // Adjust based on how much smaller you want the rectangle
+	margin := 15.0 // Adjust based on how much smaller you want the rectangle
 	return NewRect(
 		pl.position.X()+margin,
 		pl.position.Y()+margin,

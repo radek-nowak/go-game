@@ -18,9 +18,10 @@ import (
 var assets embed.FS
 
 const (
-	ScreenWidth    = 1600
-	ScreenHeight   = 900
-	MeteorHitScore = 100
+	ScreenWidth         = 1600
+	ScreenHeight        = 900
+	SmallMeteorHitScore = 50
+	BigMeteorHitScore   = 100
 )
 
 func mustLoadImage(name string) *ebiten.Image {
@@ -108,8 +109,14 @@ func (game *Game) Update() error {
 		}
 		meteorShotDown := game.player.bulletManager.CheckCollisionsWithMeteor(m)
 		if meteorShotDown {
-			game.score += MeteorHitScore
 			game.meteors = append(game.meteors[:i], game.meteors[i+1:]...)
+			if m.meteorType == big {
+				game.score += BigMeteorHitScore
+				newMeteors := NewSmallMeteors(m)
+				game.meteors = append(game.meteors, newMeteors...)
+			} else {
+				game.score += SmallMeteorHitScore
+			}
 		}
 	}
 

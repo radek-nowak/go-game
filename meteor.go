@@ -7,38 +7,26 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-var MeteorSprite = mustLoadImage("assets/meteor_detailedLarge.png")
+var BigMeteorSprite = mustLoadImage("assets/meteor_detailedLarge.png")
+var SmallMeteorSprite = mustLoadImage("assets/meteor_detailedSmall.png")
 
-var Meteors []*Meteor
+type Type int
+
+const (
+	big Type = iota
+	small
+)
 
 type Meteor struct {
-	position Vector
-	velocity Vector
-	sprite   *ebiten.Image
-	angle    float64
-}
-
-func (me *Meteor) CollisionRect() Rect {
-	bounds := me.sprite.Bounds()
-
-	// Apply a margin to shrink the collision rectangle
-	margin := 10.0 // Adjust as needed
-	return NewRect(
-		me.position.X()+margin,
-		me.position.Y()+margin,
-		float64(bounds.Dx())-2*margin,
-		float64(bounds.Dy())-2*margin,
-	)
-}
-
-func (meteor *Meteor) Update() error {
-	// Update the position based on velocity
-	meteor.position.Add(meteor.velocity.X(), meteor.velocity.Y())
-	return nil
+	position   Vector
+	velocity   Vector
+	sprite     *ebiten.Image
+	angle      float64 // TODO: is it needed?
+	meteorType Type
 }
 
 func NewMeteor() *Meteor {
-	sprite := MeteorSprite
+	sprite := BigMeteorSprite
 
 	// Center of the screen
 	target := NewVector(ScreenWidth/2, ScreenHeight/2)
@@ -59,11 +47,62 @@ func NewMeteor() *Meteor {
 	velocity := NewVector(direction.X()*speed, direction.Y()*speed)
 
 	return &Meteor{
-		position: *spawnPoint, // Initialize position to spawn point
-		velocity: *velocity,   // Set velocity toward the center
-		sprite:   sprite,
-		angle:    angle, // Store angle for future use if needed
+		position:   *spawnPoint,
+		velocity:   *velocity,
+		sprite:     sprite,
+		angle:      angle,
+		meteorType: big,
 	}
+}
+
+func NewSmallMeteors(originalMeteor *Meteor) []*Meteor {
+	sprite := SmallMeteorSprite
+
+	angle := originalMeteor.angle
+
+	minAngle, maxAngle := 10.0, 45.0
+
+	newAngle := minAngle + rand.Float64()*(maxAngle-minAngle)
+
+	vel1 := NewVector(originalMeteor.velocity.X(), originalMeteor.velocity.Y()).Rotate(newAngle)
+	vel2 := NewVector(originalMeteor.velocity.X(), originalMeteor.velocity.Y()).Rotate(-newAngle)
+
+	return []*Meteor{
+		{
+			position:   originalMeteor.position,
+			velocity:   *vel1,
+			sprite:     sprite,
+			angle:      angle,
+			meteorType: small,
+		},
+		{
+			position:   originalMeteor.position,
+			velocity:   *vel2,
+			sprite:     sprite,
+			angle:      angle,
+			meteorType: small,
+		},
+	}
+
+}
+
+func (me *Meteor) CollisionRect() Rect {
+	bounds := me.sprite.Bounds()
+
+	// Apply a margin to shrink the collision rectangle
+	margin := 10.0 // Adjust as needed
+	return NewRect(
+		me.position.X()+margin,
+		me.position.Y()+margin,
+		float64(bounds.Dx())-2*margin,
+		float64(bounds.Dy())-2*margin,
+	)
+}
+
+func (meteor *Meteor) Update() error {
+	// Update the position based on velocity
+	meteor.position.Add(meteor.velocity.X(), meteor.velocity.Y())
+	return nil
 }
 
 func (me *Meteor) Draw(screen *ebiten.Image) {
