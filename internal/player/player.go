@@ -1,25 +1,32 @@
-package main
+package player
 
 import (
+	"game/config"
+	"game/internal/collision"
+	"game/internal/timer"
+	"game/internal/vector"
+	"game/utils"
 	"math"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-var SpaceShip = mustLoadImage("assets/ship_B.png")
-var BulletSprite = mustLoadImage("assets/star_tiny.png")
-
-const topVelocity = 1.0
+var SpaceShip = utils.MustLoadImage("assets/ship_B.png")
+var BulletSprite = utils.MustLoadImage("assets/star_tiny.png")
 
 type Player struct {
 	lives         int
-	position      Vector
-	velocity      Vector
+	position      vector.Vector
+	velocity      vector.Vector
 	rotation      Rotation
 	sprite        *ebiten.Image
-	bulletTimer   *Timer
+	bulletTimer   *timer.Timer
 	bulletManager *BulletManager
+}
+
+type Rotation struct {
+	R float64
 }
 
 func NewPlayer() *Player {
@@ -32,23 +39,31 @@ func NewPlayer() *Player {
 
 	return &Player{
 		lives:         3,
-		position:      *NewVector(ScreenWidth/2-hw, ScreenHeight/2-hh),
-		velocity:      *NewVector(0, 0),
+		position:      *vector.NewVector(config.ScreenWidth/2-hw, config.ScreenHeight/2-hh),
+		velocity:      *vector.NewVector(0, 0),
 		rotation:      Rotation{},
 		sprite:        sprite,
-		bulletTimer:   NewTimer(200 * time.Millisecond),
+		bulletTimer:   timer.NewTimer(200 * time.Millisecond),
 		bulletManager: &BulletManager{},
 	}
+}
+
+func (player *Player) BulletManager() *BulletManager {
+	return player.bulletManager
 }
 
 func (player *Player) HasRemainingLives() bool {
 	return player.lives > 0
 }
 
+func (player *Player) RemainingLives() int {
+	return player.lives
+}
+
 func (player *Player) Reset() {
 	player.lives--
-	player.position = *NewVector(ScreenWidth/2, ScreenHeight/2)
-	player.velocity = *NewVector(0, 0)
+	player.position = *vector.NewVector(config.ScreenWidth/2, config.ScreenHeight/2)
+	player.velocity = *vector.NewVector(0, 0)
 	player.rotation = Rotation{}
 }
 
@@ -75,22 +90,22 @@ func (player *Player) Update() error {
 		player.shoot()
 	}
 
-	if player.position.X() > ScreenWidth {
-		player.position = *NewVector(0, player.position.Y())
+	if player.position.X() > config.ScreenWidth {
+		player.position = *vector.NewVector(0, player.position.Y())
 	}
 	if player.position.X() < 0 {
-		player.position = *NewVector(ScreenWidth, player.position.Y())
+		player.position = *vector.NewVector(config.ScreenWidth, player.position.Y())
 	}
-	if player.position.Y() > ScreenHeight {
-		player.position = *NewVector(player.position.X(), 0)
+	if player.position.Y() > config.ScreenHeight {
+		player.position = *vector.NewVector(player.position.X(), 0)
 	}
 	if player.position.Y() < 0 {
-		player.position = *NewVector(player.position.X(), ScreenHeight)
+		player.position = *vector.NewVector(player.position.X(), config.ScreenHeight)
 	}
 
 	// TODO: top velocity
 	// TODO: increase acceleration in the early phase of the movement, and then decrease
-	player.position.Add(player.velocity.x, player.velocity.y)
+	player.position.Add(player.velocity.X(), player.velocity.Y())
 
 	return nil
 }
@@ -119,12 +134,12 @@ func (player *Player) Draw(screen *ebiten.Image) {
 	screen.DrawImage(player.sprite, op)
 }
 
-func (pl *Player) CollisionRect() Rect {
+func (pl *Player) CollisionRect() collision.Rect {
 	bounds := pl.sprite.Bounds()
 
 	// Apply a margin to shrink the collision rectangle
 	margin := 15.0 // Adjust based on how much smaller you want the rectangle
-	return NewRect(
+	return collision.NewRect(
 		pl.position.X()+margin,
 		pl.position.Y()+margin,
 		float64(bounds.Dx())-2*margin,
@@ -133,18 +148,18 @@ func (pl *Player) CollisionRect() Rect {
 }
 
 type Bullet struct {
-	position Vector
-	velocity Vector
+	position vector.Vector
+	velocity vector.Vector
 	// rotation Rotation// TODO: for the trajectory
 	sprite *ebiten.Image
 }
 
-func (bu *Bullet) CollisionRect() Rect {
+func (bu *Bullet) CollisionRect() collision.Rect {
 	bounds := bu.sprite.Bounds()
 
 	// Apply a margin to shrink the collision rectangle
 	margin := 10.0 // Adjust based on how much smaller you want the rectangle
-	return NewRect(
+	return collision.NewRect(
 		bu.position.X()+margin,
 		bu.position.Y()+margin,
 		float64(bounds.Dx())-2*margin,
@@ -153,7 +168,7 @@ func (bu *Bullet) CollisionRect() Rect {
 }
 
 func (bubullet *Bullet) Update() error {
-	bubullet.position.Add(bubullet.velocity.x, bubullet.velocity.y)
+	bubullet.position.Add(bubullet.velocity.X(), bubullet.velocity.Y())
 	return nil
 }
 
@@ -167,8 +182,8 @@ func (bullet *Bullet) Draw(screen *ebiten.Image) {
 func (p *Player) NewBullet() *Bullet {
 	xk := math.Cos((270.0 + p.rotation.R) * math.Pi / 180.0)
 	yk := math.Sin((270.0 + p.rotation.R) * math.Pi / 180.0)
-	k := NewVector(xk*5, yk*5)
-	k.Add(p.velocity.x, p.velocity.y)
+	k := vector.NewVector(xk*5, yk*5)
+	k.Add(p.velocity.X(), p.velocity.Y())
 	// v := p.velocity.Normalize()
 	// v.Add(3, 3)
 	return &Bullet{

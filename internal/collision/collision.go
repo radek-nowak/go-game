@@ -1,4 +1,4 @@
-package main
+package collision
 
 type Collider interface {
 	CollisionRect() Rect

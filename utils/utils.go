@@ -1,6 +1,7 @@
-package main
+package utils
 
 import (
+	"embed"
 	"image"
 	_ "image/png"
 
@@ -9,7 +10,10 @@ import (
 	"golang.org/x/image/font/opentype"
 )
 
-func mustLoadImage(name string) *ebiten.Image {
+//go:embed assets/*
+var assets embed.FS
+
+func MustLoadImage(name string) *ebiten.Image {
 	file, err := assets.Open(name)
 	if err != nil {
 		panic(err)
@@ -24,7 +28,7 @@ func mustLoadImage(name string) *ebiten.Image {
 	return ebiten.NewImageFromImage(img)
 }
 
-func mustLoadFont(name string) font.Face {
+func MustLoadFont(name string) font.Face {
 	f, err := assets.ReadFile(name)
 	if err != nil {
 		panic(err)

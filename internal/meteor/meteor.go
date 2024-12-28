@@ -1,14 +1,18 @@
-package main
+package meteor
 
 import (
+	"game/config"
+	"game/internal/collision"
+	"game/internal/vector"
+	"game/utils"
 	"math"
 	"math/rand"
 
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-var BigMeteorSprite = mustLoadImage("assets/meteor_detailedLarge.png")
-var SmallMeteorSprite = mustLoadImage("assets/meteor_detailedSmall.png")
+var BigMeteorSprite = utils.MustLoadImage("assets/meteor_detailedLarge.png")
+var SmallMeteorSprite = utils.MustLoadImage("assets/meteor_detailedSmall.png")
 
 type Type int
 
@@ -18,8 +22,8 @@ const (
 )
 
 type Meteor struct {
-	position   Vector
-	velocity   Vector
+	position   vector.Vector
+	velocity   vector.Vector
 	sprite     *ebiten.Image
 	angle      float64 // TODO: is it needed?
 	meteorType Type
@@ -29,22 +33,22 @@ func NewMeteor() *Meteor {
 	sprite := BigMeteorSprite
 
 	// Center of the screen
-	target := NewVector(ScreenWidth/2, ScreenHeight/2)
+	target := vector.NewVector(config.ScreenWidth/2, config.ScreenHeight/2)
 
 	// Spawn point on the edge of the screen
-	r := ScreenWidth / 2.0
+	r := config.ScreenWidth / 2.0
 	angle := rand.Float64() * 2 * math.Pi
-	spawnPoint := NewVector(
+	spawnPoint := vector.NewVector(
 		target.X()+r*math.Cos(angle),
 		target.Y()+r*math.Sin(angle),
 	)
 
 	// Velocity direction toward the center
-	direction := NewVector(target.X()-spawnPoint.X(), target.Y()-spawnPoint.Y()).Normalize()
+	direction := vector.NewVector(target.X()-spawnPoint.X(), target.Y()-spawnPoint.Y()).Normalize()
 
 	// Set velocity with some random speed factor
 	speed := 0.9 + rand.Float64() // TODO: increase speed and spawn freq by time //+ float64(time.Now().Second())/
-	velocity := NewVector(direction.X()*speed, direction.Y()*speed)
+	velocity := vector.NewVector(direction.X()*speed, direction.Y()*speed)
 
 	return &Meteor{
 		position:   *spawnPoint,
@@ -64,8 +68,8 @@ func NewSmallMeteors(originalMeteor *Meteor) []*Meteor {
 
 	newAngle := minAngle + rand.Float64()*(maxAngle-minAngle)
 
-	vel1 := NewVector(originalMeteor.velocity.X(), originalMeteor.velocity.Y()).Rotate(newAngle)
-	vel2 := NewVector(originalMeteor.velocity.X(), originalMeteor.velocity.Y()).Rotate(-newAngle)
+	vel1 := vector.NewVector(originalMeteor.velocity.X(), originalMeteor.velocity.Y()).Rotate(newAngle)
+	vel2 := vector.NewVector(originalMeteor.velocity.X(), originalMeteor.velocity.Y()).Rotate(-newAngle)
 
 	return []*Meteor{
 		{
@@ -86,12 +90,16 @@ func NewSmallMeteors(originalMeteor *Meteor) []*Meteor {
 
 }
 
-func (me *Meteor) CollisionRect() Rect {
+func (meteor *Meteor) IsBig() bool {
+	return meteor.meteorType == big
+}
+
+func (me *Meteor) CollisionRect() collision.Rect {
 	bounds := me.sprite.Bounds()
 
 	// Apply a margin to shrink the collision rectangle
 	margin := 10.0 // Adjust as needed
-	return NewRect(
+	return collision.NewRect(
 		me.position.X()+margin,
 		me.position.Y()+margin,
 		float64(bounds.Dx())-2*margin,
