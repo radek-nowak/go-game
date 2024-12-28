@@ -1,4 +1,4 @@
-## Meteor Shooter Game
+# Meteor Shooter Game
 
 Meteor Shooter is a 2D arcade-style game written in Golang, built with [Ebitengine](https://ebitengine.org/) (Ebiten). The objective is to shoot down meteors and avoid being hit while surviving as long as possible.
 
