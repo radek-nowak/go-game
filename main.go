@@ -17,12 +17,16 @@ import (
 
 var ScoreFont = utils.MustLoadFont("assets/Kenney Mini.ttf")
 
-type GameActor interface {
-	Update() error
-	Draw(screen *ebiten.Image)
-}
+type GameState int
+
+const (
+	playing GameState = iota
+	menu
+	paused
+)
 
 type Game struct {
+	state            GameState
 	player           *player.Player
 	meteors          []*meteor.Meteor
 	bulletTimer      *timer.Timer
@@ -30,7 +34,32 @@ type Game struct {
 	score            int
 }
 
+type GameActor interface {
+	Update() error
+	Draw(screen *ebiten.Image)
+}
+
 func (game *Game) Update() error {
+	if game.state == menu {
+		if ebiten.IsKeyPressed(ebiten.KeySpace) {
+			game.state = playing
+		}
+
+		return nil
+	}
+
+	if game.state == paused {
+		if ebiten.IsKeyPressed(ebiten.KeySpace) {
+			game.state = playing
+		}
+		return nil
+	}
+
+	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
+		game.state = paused
+		return nil
+	}
+
 	game.player.Update()
 
 	// the game ends if player has 0 lives
@@ -81,6 +110,15 @@ func (game *Game) Update() error {
 }
 
 func (game *Game) Draw(screen *ebiten.Image) {
+	if game.state == menu {
+		text.Draw(screen, fmt.Sprint("Press space to play"), ScoreFont, config.ScreenWidth/2-150, config.ScreenHeight/2, color.White)
+		return
+	}
+
+	if game.state == paused {
+		text.Draw(screen, fmt.Sprint("Paused press SPACE to continue"), ScoreFont, config.ScreenWidth/2-300, config.ScreenHeight/2, color.White)
+	}
+
 	game.player.Draw(screen)
 
 	for _, m := range game.meteors {
@@ -109,6 +147,7 @@ func (ga *Game) Layout(outsideWidth int, outsideHeight int) (screenWidth int, sc
 func main() {
 
 	g := &Game{
+		state:            menu,
 		player:           player.NewPlayer(),
 		meteors:          []*meteor.Meteor{},
 		bulletTimer:      timer.NewTimer(5000 * time.Millisecond),

@@ -68,28 +68,32 @@ func (player *Player) Reset() {
 }
 
 func (player *Player) Update() error {
-
 	rotationSpeed := 2.0
 
-	xk := math.Cos((270.0 + player.rotation.R) * math.Pi / 180.0)
-	yk := math.Sin((270.0 + player.rotation.R) * math.Pi / 180.0)
+	// Handle shooting
+	if ebiten.IsKeyPressed(ebiten.KeySpace) {
+		player.shoot()
+	}
 
+	// Handle rotation
+	if ebiten.IsKeyPressed(ebiten.KeyRight) {
+		player.rotation.R -= rotationSpeed
+	}
 	if ebiten.IsKeyPressed(ebiten.KeyLeft) {
 		player.rotation.R += rotationSpeed
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyRight) {
-		player.rotation.R -= rotationSpeed
 
-	}
+	// Calculate movement direction
+	xk := math.Cos((270.0 + player.rotation.R) * math.Pi / 180.0)
+	yk := math.Sin((270.0 + player.rotation.R) * math.Pi / 180.0)
+
+	// Handle acceleration
 	if ebiten.IsKeyPressed(ebiten.KeyUp) {
 		acceleration := 0.03
 		player.velocity.Add(xk*acceleration, yk*acceleration)
 	}
 
-	if ebiten.IsKeyPressed(ebiten.KeySpace) {
-		player.shoot()
-	}
-
+	// Wrap position around the screen
 	if player.position.X() > config.ScreenWidth {
 		player.position = *vector.NewVector(0, player.position.Y())
 	}
@@ -103,8 +107,7 @@ func (player *Player) Update() error {
 		player.position = *vector.NewVector(player.position.X(), config.ScreenHeight)
 	}
 
-	// TODO: top velocity
-	// TODO: increase acceleration in the early phase of the movement, and then decrease
+	// Update position
 	player.position.Add(player.velocity.X(), player.velocity.Y())
 
 	return nil
