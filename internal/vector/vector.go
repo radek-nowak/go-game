@@ -2,6 +2,8 @@ package vector
 
 import "math"
 
+const minMagnitude = 1e-9
+
 type Vector struct {
 	x float64
 	y float64
@@ -32,6 +34,10 @@ func (v *Vector) Rotate(angle float64) *Vector {
 
 func (v *Vector) Normalize() *Vector {
 	lenght := math.Sqrt(math.Pow(v.x, 2) + math.Pow(v.y, 2))
+	if lenght < minMagnitude {
+		return NewVector(0, 0)
+
+	}
 	return NewVector(v.x/lenght, v.y/lenght)
 }
 
